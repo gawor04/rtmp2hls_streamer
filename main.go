@@ -17,5 +17,5 @@ func main() {
 	http.HandleFunc("/sessions", session.NewSessionHandler)
 	http.HandleFunc("/sessions/", session.DeleteSessionHandler)
 
-	http.ListenAndServe("127.0.0.1:8080", nil)
+	http.ListenAndServe("127.0.0.1:80", nil)
 }
