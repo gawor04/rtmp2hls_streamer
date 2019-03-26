@@ -47,7 +47,6 @@ func DeleteSessionHandler(w http.ResponseWriter, r *http.Request) {
 		re := regexp.MustCompile(regex_uuid)
 		uuid := re.FindString(r.RequestURI)
 
-
 		if len(uuid) == 0 {
 
 			log.Error("Url: " + r.RequestURI + " method: " + r.Method + " bad request")
