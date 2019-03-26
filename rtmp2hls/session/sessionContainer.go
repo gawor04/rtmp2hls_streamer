@@ -39,9 +39,7 @@ func ExitAction(identifier string) {
 func SessionsObserver() {
 	
 	go func() {
-
 		for {
-
 			Sessions.wg.Wait() // waits for ExitAction to be called
 			Sessions.mutex.Lock()
 
