@@ -5,20 +5,25 @@ import (
 )
 
 type SessionContainer struct {
-	sesMap map[string]*Session
-	mutex sync.Mutex
-	wg sync.WaitGroup
+
+	sesMap map[string] *Session
+	mutex              sync.Mutex
+	wg                 sync.WaitGroup
 }
 
 type SessionProperties struct {
+
 	Session_id     string `json:"session_id"`
 	Ingest_address string `json:"ingest_address"`
 	Playback_url   string `json:"playback_url"`
 }
 
+/* global variable */
 var Sessions = NewSessionContainer()
 
+/* SessionContainer constructor */
 func NewSessionContainer() *SessionContainer {
+
 	sesCont := new(SessionContainer)
 	sesCont.sesMap = make(map[string]*Session)
 	sesCont.wg.Add(1)
@@ -26,6 +31,7 @@ func NewSessionContainer() *SessionContainer {
 	return sesCont
 }
 
+/* action if external command exits without error */
 func ExitAction(identifier string) {
 
 	Sessions.mutex.Lock()
@@ -35,18 +41,21 @@ func ExitAction(identifier string) {
 	defer Sessions.wg.Done()
 }
 
-/* need to restart ffmpeg after connection lost */
+/* need to restart ffmpeg after connection lost (external command exits without error) */
 func SessionsObserver() {
 	
 	go func() {
 		for {
-			Sessions.wg.Wait() // waits for ExitAction to be called
+
+			/* waits for ExitAction */
+			Sessions.wg.Wait()
 			Sessions.mutex.Lock()
 
-			/* search which session is exited */
+			/* search which session was exited */
 			for _, value := range Sessions.sesMap {
 
 				if true == value.WasExited() {
+
 					value.Restart(ExitAction)
 				}
 			}
@@ -55,22 +64,37 @@ func SessionsObserver() {
 			Sessions.wg.Add(1)
 		}
 	}()
-	
 }
 
-func (sesCont *SessionContainer) NewSession(ip string) SessionProperties {
+/* clean up on program exit */
+func SessionsClear() {
+
+	Sessions.mutex.Lock()
+
+	/* search which session is exited */
+	for _, value := range Sessions.sesMap {
+
+		value.Stop();
+	}
+
+	Sessions.mutex.Unlock()
+}
+
+/* creates new rtmp to ffpeg stream session */
+func (sesCont *SessionContainer) NewSession(ip string, port string) SessionProperties {
 
 	prop := SessionProperties{"", "", ""}
 
 	if nil != sesCont {
 		sesCont.mutex.Lock()
 
-		ses := NewSession("127.0.0.1", ExitAction)
+		ses := NewSession(ip, port, ExitAction)
 		sesCont.sesMap[ses.GetPath()] = ses
 
 		prop.Ingest_address = ses.GetRTMPurl()
 		prop.Session_id = ses.GetUUID()
 		prop.Playback_url = ses.GetHTTPPath()
+
 		sesCont.mutex.Unlock()
 	}
 
@@ -86,6 +110,7 @@ func (sesCont *SessionContainer) DeleteSession(uuid string) {
 		for key, value := range sesCont.sesMap {
 
 			if uuid == value.uuid {
+
 				sesCont.sesMap[key].Stop()
 				delete(sesCont.sesMap, key)
 			}
@@ -95,25 +120,7 @@ func (sesCont *SessionContainer) DeleteSession(uuid string) {
 	}
 }
 
-func (sesCont *SessionContainer) CheckIfStillTranscoded(path string) bool {
-
-	result := false
-
-	if nil != sesCont {
-
-		sesCont.mutex.Lock()
-
-		if _, ok := sesCont.sesMap[path]; ok {
-
-			result = true
-		}
-
-		sesCont.mutex.Unlock()
-	}
-
-	return result
-}
-
+/* returns possible video directories */
 func (sesCont *SessionContainer) GetAvailableKeys() []string {
 
 	sesCont.mutex.Lock()
@@ -121,6 +128,7 @@ func (sesCont *SessionContainer) GetAvailableKeys() []string {
 	keys := make([]string, 0, len(sesCont.sesMap))
 
 	for k := range sesCont.sesMap {
+
 		keys = append(keys, k)
 	}
 

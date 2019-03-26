@@ -3,23 +3,33 @@ package session
 import (
 	"encoding/json"
 	log "github.com/cihub/seelog"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
 )
 
-const my_ip = "127.168.0.1"
-const regex_uuid = "\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b"
-const regex_last_url = "[^/]*$"
+const regexUuid = "\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b"
+const regexLastUrl = "[^/]*$"
 
 /* /session GET request */
 func NewSessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	if http.MethodGet == r.Method {
 
-		resp := Sessions.NewSession(my_ip)
+		host, port, _ := net.SplitHostPort(r.Host)
+
+		if len(host) < 1 {
+			host = r.Host
+			port = ""
+		}
+
+		resp := Sessions.NewSession(host, port)
+
+		/* create json response */
 		js, err := json.Marshal(resp)
+
 		if err != nil {
 
 			log.Error("Url: " + r.RequestURI + " new session problems")
@@ -28,7 +38,6 @@ func NewSessionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Info(js)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(js)
 
@@ -44,7 +53,8 @@ func DeleteSessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	if http.MethodDelete == r.Method {
 
-		re := regexp.MustCompile(regex_uuid)
+		/* search uuid */
+		re := regexp.MustCompile(regexUuid)
 		uuid := re.FindString(r.RequestURI)
 
 		if len(uuid) == 0 {
@@ -71,8 +81,10 @@ func HLSSessionHandler(w http.ResponseWriter, r *http.Request) {
 	if http.MethodGet == r.Method {
 
 		directory := determineDirectoryByURL(r)
-		re := regexp.MustCompile(regex_last_url)
+
+		re := regexp.MustCompile(regexLastUrl)
 		fileName := re.FindString(r.RequestURI)
+
 		fileLoc := directory + "/" + fileName
 		log.Debug("request file: " + fileLoc)
 
@@ -102,12 +114,14 @@ func HLSSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* puts m3u8 file to http response */
 func serveM3u8(w http.ResponseWriter, r *http.Request, path string) {
 
 	w.Header().Add("Content-Type", "application/x-mpegURL")
 	http.ServeFile(w, r, path)
 }
 
+/* puts ts file to http response */
 func serveTs(w http.ResponseWriter, r *http.Request, path string) {
 
 	w.Header().Add("Content-Type", "video/MP2T")

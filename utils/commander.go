@@ -19,6 +19,7 @@ type Commander struct {
 	cmd        exec.Cmd
 }
 
+/* Commander constructor */
 func NewCommander(name string, args string, exitAction OnExitFunc) *Commander {
 
 	_, err := exec.LookPath(name)
@@ -52,11 +53,14 @@ func (cmder *Commander) Execute(identifier string) {
 
 			err := cmder.cmd.Run()
 			if err != nil {
+
 				log.Info("Stopped command: " + logStr + " with error: " + err.Error())
 			} else {
+
 				log.Info("Stopped command: " + logStr + " without error")
 
 				if nil != cmder.exitAction {
+
 					cmder.exitAction(cmder.identifier)
 				}
 			}
