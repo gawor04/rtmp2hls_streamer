@@ -15,7 +15,7 @@ const ffmpeg_cmd_linux = "ffmpeg"
 const ffmpeg_cmd_windows = "ffmpeg.exe"
 const ffmpeg_arg1 = "-listen -1 -rtmp_live live -i "
 const ffmpeg_arg2 = " -c:v libx264 -crf 21 -preset veryfast -g 25 -sc_threshold 0 -c:a aac -b:a 128k -ac 2 -f hls -hls_flags delete_segments -hls_segment_size 500000 -hls_time 4 -hls_playlist_type event "
-
+const rndStrLen = 20;
 
 type Session struct {
 	ip string
@@ -28,8 +28,6 @@ type Session struct {
 
 func NewSession(ip string, exitAction utils.OnExitFunc) *Session {
 
-	const rndStrLen = 20;
-
 	session := new(Session)
 	session.ip = ip
 
@@ -40,8 +38,8 @@ func NewSession(ip string, exitAction utils.OnExitFunc) *Session {
 	}
 
 	/* remove new line */
-    strUiid := strings.TrimSuffix(string(uuid), "\n")
-	log.Info(strUiid )
+    	strUiid := strings.TrimSuffix(string(uuid), "\n")
+	log.Info(strUiid)
 	session.uuid = strUiid
 
 	port, err := freeport.GetFreePort()
@@ -53,7 +51,7 @@ func NewSession(ip string, exitAction utils.OnExitFunc) *Session {
 
 	session.path = utils.RandomString(rndStrLen)
 
-	session.exited = true;
+	session.exited = false;
 	session.cmdr = session.prepareFFmpeg(exitAction)
 	session.cmdr.Execute(session.path)
 
@@ -66,7 +64,6 @@ func NewSession(ip string, exitAction utils.OnExitFunc) *Session {
 func (session *Session) Stop() {
 
 	if nil != session {
-
 		session.cmdr.Stop()
 	}
 }
@@ -113,7 +110,6 @@ func (session *Session) GetRTMPurl() string {
 	url := ""
 
 	if nil != session {
-
 		url += "rtmp://" + session.ip + ":" + strconv.Itoa(session.port) + "/test/" + session.path
 	}
 
@@ -125,7 +121,6 @@ func (session *Session) GetHTTPPath() string {
 	url := ""
 
 	if nil != session {
-
 		url += "http://" + session.ip + "/play/" + session.path + ".m3u8"
 	}
 
@@ -137,7 +132,6 @@ func (session *Session) Getm3u8Path() string {
 	path := ""
 
 	if nil != session {
-
 		path += session.path + "/" + session.path + ".m3u8"
 	}
 
@@ -149,7 +143,6 @@ func (session *Session) GetUUID() string {
 	uuid := ""
 
 	if nil != session {
-
 		uuid += session.uuid
 	}
 
@@ -161,7 +154,6 @@ func (session *Session) GetPath() string {
 	path := ""
 
 	if nil != session {
-
 		path += session.path
 	}
 
