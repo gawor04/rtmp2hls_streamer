@@ -6,7 +6,7 @@ rtmp2hls_streamer is GO powered, ffmpeg based rtmp to hls live-streaming applica
 
 rtmp2hls_streamer requires ffmpeg installation on your machine.
 
-External go the dependencies:
+External go dependencies:
 ```sh
 $ go get -u github.com/cihub/seelog
 $ go get github.com/phayes/freeport
